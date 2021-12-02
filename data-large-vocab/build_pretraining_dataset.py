@@ -200,9 +200,11 @@ def split_corpus(corpus_path, tmp_dir, num_processes):
             #     break
             file_idx = doc_idx % num_processes
             f_out = tmp_files[file_idx]
-            f_out.write(line)
             if line == '\n':
+                f_out.write('\n')
                 doc_idx += 1
+            else:
+                f_out.write(line)
     for f in tmp_files:
         f.close()
 

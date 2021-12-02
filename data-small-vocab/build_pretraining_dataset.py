@@ -23,13 +23,56 @@ import time
 from tqdm import tqdm
 import tensorflow.compat.v1 as tf
 
-from model import tokenization
-from util import utils
+
+class Tokenizer:
+    def __init__(self, vocab_file):
+        self.vocab = dict()
+
+        # спец. символы
+        self.unk_id = 1
+        self.vocab['[PAD]'] = 0
+        self.vocab['[UNK]'] = self.unk_id
+        self.vocab['[CLS]'] = 2
+        self.vocab['[SEP]'] = 3
+        self.vocab['[MASK]'] = 4
+
+        # bpe
+        i = 5
+        with open(vocab_file) as f:
+            for line in f:
+                line = line.strip()
+                piece, _ = line.strip().split()
+                assert piece not in self.vocab
+                self.vocab[piece] = i
+                i += 1
+        print("vocab size:", len(self.vocab))
+
+    @staticmethod
+    def tokenize(line):
+        return line.strip().split()
+
+    def convert_tokens_to_ids(self, tokens):
+        return [self.vocab.get(tok, self.unk_id) for tok in tokens]
 
 
 def create_int_feature(values):
     feature = tf.train.Feature(int64_list=tf.train.Int64List(value=list(values)))
     return feature
+
+
+def mkdir(path):
+    if not tf.io.gfile.exists(path):
+        tf.io.gfile.makedirs(path)
+
+
+def rmrf(path):
+    if tf.io.gfile.exists(path):
+        tf.io.gfile.rmtree(path)
+
+
+def rmkdir(path):
+    rmrf(path)
+    mkdir(path)
 
 
 class ExampleBuilder(object):
@@ -98,13 +141,17 @@ class ExampleBuilder(object):
     def _make_tf_example(self, first_segment, second_segment):
         """Converts two "segments" of text into a tf.train.Example."""
         vocab = self._tokenizer.vocab
-        input_ids = [vocab["[CLS]"]] + first_segment + [vocab["[SEP]"]]
+        CLS = vocab["[CLS]"]
+        SEP = vocab["[SEP]"]
+        PAD = vocab["[PAD]"]
+
+        input_ids = [CLS] + first_segment + [SEP]
         segment_ids = [0] * len(input_ids)
         if second_segment:
-            input_ids += second_segment + [vocab["[SEP]"]]
+            input_ids += second_segment + [SEP]
             segment_ids += [1] * (len(second_segment) + 1)
         input_mask = [1] * len(input_ids)
-        input_ids += [0] * (self._max_length - len(input_ids))
+        input_ids += [PAD] * (self._max_length - len(input_ids))
         input_mask += [0] * (self._max_length - len(input_mask))
         segment_ids += [0] * (self._max_length - len(segment_ids))
         tf_example = tf.train.Example(features=tf.train.Features(feature={
@@ -122,9 +169,15 @@ class ExampleWriter(object):
                  num_jobs, blanks_separate_docs, do_lower_case,
                  num_out_files=1000):
         self._blanks_separate_docs = blanks_separate_docs
-        tokenizer = tokenization.FullTokenizer(
-            vocab_file=vocab_file,
-            do_lower_case=do_lower_case)
+        tokenizer = Tokenizer(vocab_file=vocab_file)
+
+        print("saving vocab for bert...")
+        if job_id == 0:
+            data_dir = os.path.dirname(vocab_file)
+            with open(os.path.join(data_dir, "vocab.txt"), "w") as f:
+                for tok in tokenizer.vocab.keys():
+                    f.write(tok + "\n")
+
         self._example_builder = ExampleBuilder(tokenizer, max_seq_length)
         self._writers = []
         for i in range(num_out_files):
@@ -200,9 +253,11 @@ def split_corpus(corpus_path, tmp_dir, num_processes):
             #     break
             file_idx = doc_idx % num_processes
             f_out = tmp_files[file_idx]
-            f_out.write(line)
             if line == '\n':
+                f_out.write('\n')
                 doc_idx += 1
+            else:
+                f_out.write(line)
     for f in tmp_files:
         f.close()
 
@@ -223,8 +278,8 @@ def main():
 
     assert args.num_processes <= args.num_out_files
 
-    utils.rmkdir(args.corpus_dir)
-    utils.rmkdir(args.output_dir)
+    rmkdir(args.corpus_dir)
+    rmkdir(args.output_dir)
 
     split_corpus(corpus_path=args.corpus_path, tmp_dir=args.corpus_dir, num_processes=args.num_processes)
 
@@ -239,7 +294,7 @@ def main():
         for job in jobs:
             job.join()
 
-    utils.rmrf(args.corpus_dir)
+    rmrf(args.corpus_dir)
 
 
 if __name__ == "__main__":
