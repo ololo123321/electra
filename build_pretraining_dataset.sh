@@ -1,7 +1,6 @@
 #!/bin/bash
 
-data_dir=${PWD}/data-10m-large-vocab-clean
-
+data_dir=${PWD}/data-large-vocab
 corpus_path=${data_dir}/tmp/corpus.sentences
 corpus_dir=${data_dir}/tmp/sharded
 

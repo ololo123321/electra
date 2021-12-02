@@ -1,6 +1,7 @@
 #!/bin/bash
 
-corpora_dir=/datadrive/data/monolingual_corpora/
+# shards of corpus. each file: one document per line
+corpora_dir=/path/to/corpora_dir
 output_file=./tmp/corpus.sentences
 num_processes=6
 

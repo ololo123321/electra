@@ -1,11 +1,7 @@
 #!/bin/bash
 
 num_gpus=2
-
-#data_dir=${PWD}/data-10m
-#data_dir=${PWD}/data-10m-small-vocab
-data_dir=${PWD}/data-10m-small-vocab-clean
-#data_dir=${PWD}/data-10m-large-vocab-clean
+data_dir=${PWD}/data-large-vocab
 
 models_dir=${PWD}/models
 #models_dir=${PWD}/models_wo_lr_scaling

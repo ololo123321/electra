@@ -14,10 +14,9 @@ REM_NON_PRINT_CHAR=$SCRIPTS/tokenizer/remove-non-printing-char.perl
 NORM_PUNC=$SCRIPTS/tokenizer/normalize-punctuation.perl
 
 data_dir=./tmp
-#CORPUS=/datadrive/data/news-10m.ru
-#CORPUS=/datadrive/data/news-100.ru
-#CORPUS=/datadrive/data/news-10000.ru
-#CORPUS=test_corpus.ru
+# the same format as for bert:
+# * one sentence per line
+# * blank line betweeb docs
 CORPUS=${data_dir}/corpus.sentences
 lang=ru
 

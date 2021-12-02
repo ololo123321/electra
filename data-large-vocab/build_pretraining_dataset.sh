@@ -2,7 +2,8 @@
 
 data_dir=${PWD}
 
-corpus_path=/datadrive/data/news-10m.ru
+# one document per line
+corpus_path=/path/to/data.txt
 corpus_dir=${data_dir}/tmp/sharded
 
 max_seq_len=128
